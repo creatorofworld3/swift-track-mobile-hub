@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
-import InteractiveMap from '@/components/InteractiveMap';
+import GoogleMap from '@/components/GoogleMap';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, Navigation, Clock, Phone, RefreshCw, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { websocketService } from '@/services/websocket';
 
 interface Driver {
   id: string;
@@ -15,6 +16,8 @@ interface Driver {
   currentDelivery?: string;
   estimatedArrival?: string;
   phone: string;
+  speed?: number;
+  heading?: number;
 }
 
 const LiveTracking = () => {
@@ -67,7 +70,26 @@ const LiveTracking = () => {
       setLastUpdate(new Date());
     }, 10000);
 
-    return () => clearInterval(interval);
+    // Subscribe to WebSocket updates
+    const handleLocationUpdate = (data: any) => {
+      setDrivers(prev => prev.map(driver => 
+        driver.id === data.driverId 
+          ? { 
+              ...driver, 
+              currentLocation: data.location,
+              speed: data.speed,
+              heading: data.heading 
+            }
+          : driver
+      ));
+    };
+
+    websocketService.subscribe('location_update', handleLocationUpdate);
+
+    return () => {
+      clearInterval(interval);
+      websocketService.unsubscribe('location_update', handleLocationUpdate);
+    };
   }, []);
 
   const getStatusColor = (status: string) => {
@@ -104,7 +126,9 @@ const LiveTracking = () => {
     type: 'driver' as const,
     title: driver.name,
     status: driver.status,
-    info: driver.currentDelivery ? `Delivering ${driver.currentDelivery}` : 'Available'
+    info: driver.currentDelivery ? `Delivering ${driver.currentDelivery}` : 'Available',
+    speed: driver.speed,
+    heading: driver.heading
   }));
 
   return (
@@ -114,9 +138,13 @@ const LiveTracking = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Live Tracking</h1>
-            <p className="text-gray-600">Real-time driver and delivery tracking</p>
+            <p className="text-gray-600">Real-time driver and delivery tracking with WebSocket updates</p>
           </div>
           <div className="flex items-center gap-4">
+            <Badge className="bg-green-100 text-green-800">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse mr-2"></div>
+              Live Updates Active
+            </Badge>
             <span className="text-sm text-gray-500">
               Last updated: {lastUpdate.toLocaleTimeString()}
             </span>
@@ -127,17 +155,26 @@ const LiveTracking = () => {
           </div>
         </div>
 
-        {/* Interactive Map */}
+        {/* Enhanced Interactive Map */}
         <Card>
           <CardHeader>
-            <CardTitle>Live Map View</CardTitle>
-            <CardDescription>Real-time positions of all active drivers</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Real-Time Tracking Map</CardTitle>
+                <CardDescription>Live positions with WebSocket integration and Google Maps API</CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">WebSocket Connected</Badge>
+                <Badge variant="outline">Google Maps API</Badge>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            <InteractiveMap 
+            <GoogleMap 
               markers={mapMarkers}
               height="h-96"
               onMarkerClick={handleMapMarkerClick}
+              showControls={true}
             />
           </CardContent>
         </Card>
