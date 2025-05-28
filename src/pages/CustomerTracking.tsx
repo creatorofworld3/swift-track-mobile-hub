@@ -1,6 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import InteractiveMap from '@/components/InteractiveMap';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ import {
   MessageCircle,
   Navigation
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface TrackingData {
   id: string;
@@ -43,7 +44,6 @@ const CustomerTracking = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate API call
     setTimeout(() => {
       setTrackingData({
         id: trackingId || 'DEL-001',
@@ -107,6 +107,30 @@ const CustomerTracking = () => {
     }
   };
 
+  const handleCallDriver = () => {
+    if (trackingData) {
+      toast.success(`Calling ${trackingData.driver.name} at ${trackingData.driver.phone}`);
+    }
+  };
+
+  const handleMessageDriver = () => {
+    if (trackingData) {
+      toast.success(`Opening message chat with ${trackingData.driver.name}`);
+    }
+  };
+
+  const handleContactSupport = () => {
+    toast.success('Connecting you to customer support...');
+  };
+
+  const handleReschedule = () => {
+    toast.success('Opening reschedule options...');
+  };
+
+  const handleChangeAddress = () => {
+    toast.success('Opening address change form...');
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -128,6 +152,27 @@ const CustomerTracking = () => {
       </div>
     );
   }
+
+  const mapMarkers = [
+    {
+      id: 'driver',
+      lat: trackingData.currentLocation?.lat || 40.7128,
+      lng: trackingData.currentLocation?.lng || -74.0060,
+      type: 'driver' as const,
+      title: trackingData.driver.name,
+      status: 'active',
+      info: `Delivering ${trackingData.id}`
+    },
+    {
+      id: 'destination',
+      lat: 40.7589,
+      lng: -73.9851,
+      type: 'delivery' as const,
+      title: 'Your Location',
+      status: 'pending',
+      info: 'Delivery destination'
+    }
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -165,19 +210,18 @@ const CustomerTracking = () => {
             </CardContent>
           </Card>
 
-          {/* Map Placeholder */}
+          {/* Interactive Map */}
           <Card>
             <CardHeader>
               <CardTitle>Live Tracking Map</CardTitle>
+              <CardDescription>Real-time location of your delivery</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-64 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center border-2 border-dashed border-blue-300">
-                <div className="text-center">
-                  <Navigation className="h-12 w-12 text-blue-500 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-blue-900 mb-2">Live Map View</h3>
-                  <p className="text-blue-700">Your delivery's real-time location</p>
-                </div>
-              </div>
+              <InteractiveMap 
+                markers={mapMarkers}
+                height="h-64"
+                onMarkerClick={(marker) => toast.info(`Selected: ${marker.title}`)}
+              />
             </CardContent>
           </Card>
 
@@ -233,11 +277,11 @@ const CustomerTracking = () => {
                 </div>
 
                 <div className="flex space-x-2">
-                  <Button size="sm" className="flex-1">
+                  <Button size="sm" className="flex-1" onClick={handleCallDriver}>
                     <Phone className="mr-2 h-4 w-4" />
                     Call Driver
                   </Button>
-                  <Button size="sm" variant="outline" className="flex-1">
+                  <Button size="sm" variant="outline" className="flex-1" onClick={handleMessageDriver}>
                     <MessageCircle className="mr-2 h-4 w-4" />
                     Message
                   </Button>
@@ -261,21 +305,21 @@ const CustomerTracking = () => {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Button variant="outline" className="h-auto p-4">
+                <Button variant="outline" className="h-auto p-4" onClick={handleContactSupport}>
                   <div className="text-center">
                     <MessageCircle className="h-6 w-6 mx-auto mb-2" />
                     <div className="font-medium">Contact Support</div>
                     <div className="text-sm text-gray-500">Get help with your delivery</div>
                   </div>
                 </Button>
-                <Button variant="outline" className="h-auto p-4">
+                <Button variant="outline" className="h-auto p-4" onClick={handleReschedule}>
                   <div className="text-center">
                     <Clock className="h-6 w-6 mx-auto mb-2" />
                     <div className="font-medium">Reschedule</div>
                     <div className="text-sm text-gray-500">Change delivery time</div>
                   </div>
                 </Button>
-                <Button variant="outline" className="h-auto p-4">
+                <Button variant="outline" className="h-auto p-4" onClick={handleChangeAddress}>
                   <div className="text-center">
                     <MapPin className="h-6 w-6 mx-auto mb-2" />
                     <div className="font-medium">Change Address</div>

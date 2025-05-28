@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,7 +33,7 @@ interface Delivery {
 
 const DriverApp = () => {
   const [currentStatus, setCurrentStatus] = useState<'available' | 'on-route' | 'break'>('available');
-  const [deliveries] = useState<Delivery[]>([
+  const [deliveries, setDeliveries] = useState<Delivery[]>([
     {
       id: 'DEL-001',
       customer: 'John Smith',
@@ -103,23 +102,43 @@ const DriverApp = () => {
     toast.success('Back to work! Ready for deliveries.');
   };
 
-  const handleNavigate = (address: string) => {
-    toast.success(`Opening navigation to ${address}`);
-    // In a real app, this would open the native maps app
+  const handleEndShift = () => {
+    setCurrentStatus('available');
+    toast.success('Shift ended. Have a great day!');
   };
 
-  const handleCallCustomer = (phone: string) => {
-    toast.success(`Calling ${phone}`);
-    // In a real app, this would initiate a phone call
+  const handleNavigate = (address: string) => {
+    toast.success(`Opening navigation to ${address}`);
+  };
+
+  const handleCallCustomer = (customer: string, phone: string) => {
+    toast.success(`Calling ${customer} at ${phone}`);
+  };
+
+  const handleTakePhoto = (deliveryId: string) => {
+    toast.success(`Camera opened for delivery ${deliveryId}`);
   };
 
   const handleMarkDelivered = (deliveryId: string) => {
+    setDeliveries(prev => 
+      prev.map(delivery => 
+        delivery.id === deliveryId 
+          ? { ...delivery, status: 'delivered' as const }
+          : delivery
+      )
+    );
     toast.success(`Delivery ${deliveryId} marked as delivered!`);
   };
 
-  const handleTakePhoto = () => {
-    toast.success('Photo captured for proof of delivery');
-    // In a real app, this would open the camera
+  const handleMarkArrived = (deliveryId: string) => {
+    setDeliveries(prev => 
+      prev.map(delivery => 
+        delivery.id === deliveryId 
+          ? { ...delivery, status: 'arrived' as const }
+          : delivery
+      )
+    );
+    toast.success(`Marked as arrived at ${deliveryId}`);
   };
 
   return (
@@ -162,7 +181,7 @@ const DriverApp = () => {
                     <Pause className="mr-2 h-4 w-4" />
                     Take Break
                   </Button>
-                  <Button variant="destructive" className="flex-1 sm:flex-none">
+                  <Button onClick={handleEndShift} variant="destructive" className="flex-1 sm:flex-none">
                     <Square className="mr-2 h-4 w-4" />
                     End Shift
                   </Button>
@@ -300,7 +319,7 @@ const DriverApp = () => {
                     <Button 
                       size="sm" 
                       variant="outline"
-                      onClick={() => handleCallCustomer(delivery.phone)}
+                      onClick={() => handleCallCustomer(delivery.customer, delivery.phone)}
                       className="flex-1 sm:flex-none"
                     >
                       <Phone className="mr-2 h-4 w-4" />
@@ -309,13 +328,24 @@ const DriverApp = () => {
                     <Button 
                       size="sm" 
                       variant="outline"
-                      onClick={handleTakePhoto}
+                      onClick={() => handleTakePhoto(delivery.id)}
                       className="flex-1 sm:flex-none"
                     >
                       <Camera className="mr-2 h-4 w-4" />
                       Photo
                     </Button>
-                    {delivery.status === 'in-progress' && (
+                    {delivery.status === 'pending' && (
+                      <Button 
+                        size="sm" 
+                        variant="secondary"
+                        onClick={() => handleMarkArrived(delivery.id)}
+                        className="flex-1 sm:flex-none"
+                      >
+                        <MapPin className="mr-2 h-4 w-4" />
+                        Mark Arrived
+                      </Button>
+                    )}
+                    {(delivery.status === 'in-progress' || delivery.status === 'arrived') && (
                       <Button 
                         size="sm" 
                         variant="default"

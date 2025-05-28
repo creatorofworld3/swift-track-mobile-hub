@@ -1,10 +1,11 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
+import InteractiveMap from '@/components/InteractiveMap';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Navigation, Clock, Phone, RefreshCw } from 'lucide-react';
+import { MapPin, Navigation, Clock, Phone, RefreshCw, MessageCircle } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface Driver {
   id: string;
@@ -55,7 +56,6 @@ const LiveTracking = () => {
   const [lastUpdate, setLastUpdate] = useState(new Date());
 
   useEffect(() => {
-    // Simulate real-time updates
     const interval = setInterval(() => {
       setDrivers(prev => prev.map(driver => ({
         ...driver,
@@ -65,7 +65,7 @@ const LiveTracking = () => {
         }
       })));
       setLastUpdate(new Date());
-    }, 10000); // Update every 10 seconds
+    }, 10000);
 
     return () => clearInterval(interval);
   }, []);
@@ -81,8 +81,31 @@ const LiveTracking = () => {
 
   const refreshTracking = () => {
     setLastUpdate(new Date());
-    // In a real app, this would fetch fresh data from the API
+    toast.success('Tracking data refreshed!');
   };
+
+  const handleContactDriver = (driverName: string, phone: string) => {
+    toast.success(`Calling ${driverName} at ${phone}`);
+  };
+
+  const handleShowRoute = (driverName: string) => {
+    toast.success(`Opening route for ${driverName}`);
+  };
+
+  const handleMapMarkerClick = (marker: any) => {
+    toast.info(`Selected: ${marker.title}`);
+  };
+
+  // Convert drivers to map markers
+  const mapMarkers = drivers.map(driver => ({
+    id: driver.id,
+    lat: driver.currentLocation.lat,
+    lng: driver.currentLocation.lng,
+    type: 'driver' as const,
+    title: driver.name,
+    status: driver.status,
+    info: driver.currentDelivery ? `Delivering ${driver.currentDelivery}` : 'Available'
+  }));
 
   return (
     <Layout>
@@ -104,26 +127,18 @@ const LiveTracking = () => {
           </div>
         </div>
 
-        {/* Map Placeholder */}
+        {/* Interactive Map */}
         <Card>
           <CardHeader>
             <CardTitle>Live Map View</CardTitle>
             <CardDescription>Real-time positions of all active drivers</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-96 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg flex items-center justify-center border-2 border-dashed border-blue-200">
-              <div className="text-center">
-                <MapPin className="h-12 w-12 text-blue-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-blue-900 mb-2">Interactive Map</h3>
-                <p className="text-blue-700 mb-4">Real-time GPS tracking would be displayed here</p>
-                <div className="text-sm text-blue-600">
-                  <p>• Live driver positions</p>
-                  <p>• Delivery routes</p>
-                  <p>• Traffic conditions</p>
-                  <p>• ETA calculations</p>
-                </div>
-              </div>
-            </div>
+            <InteractiveMap 
+              markers={mapMarkers}
+              height="h-96"
+              onMarkerClick={handleMapMarkerClick}
+            />
           </CardContent>
         </Card>
 
@@ -173,10 +188,22 @@ const LiveTracking = () => {
                 </div>
 
                 <div className="flex gap-2">
-                  <Button size="sm" variant="outline" className="flex-1">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={() => handleContactDriver(driver.name, driver.phone)}
+                  >
+                    <Phone className="mr-1 h-3 w-3" />
                     Contact
                   </Button>
-                  <Button size="sm" variant="outline" className="flex-1">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={() => handleShowRoute(driver.name)}
+                  >
+                    <Navigation className="mr-1 h-3 w-3" />
                     Route
                   </Button>
                 </div>
